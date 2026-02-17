@@ -114,9 +114,27 @@
 
             <!-- Controls -->
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <!-- Version -->
+              <div class="md:col-span-3">
+                <label id="labelVersion" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Versiyon</label>
+                <div class="rounded-2xl border border-emerald-200/70 dark:border-emerald-400/20 bg-emerald-50/60 dark:bg-emerald-500/10 px-3 py-3">
+                  <div class="flex items-center gap-2">
+                    <select id="versionSelect" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-sm font-semibold">
+                      <option value="">Versiyon seç...</option>
+                    </select>
+                    <button id="loadVersionBtn" class="shrink-0 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition text-xs font-bold">
+                      Yükle
+                    </button>
+                  </div>
+                  <div id="versionHelp" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                    versions/versions.json içindeki sürümler listelenir.
+                  </div>
+                </div>
+              </div>
+
               <!-- File -->
-              <div class="md:col-span-4">
-                <label id="labelFile" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Dosya</label>
+              <div class="md:col-span-3">
+                <label id="labelFile" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Özel Dosya</label>
                 <div class="rounded-2xl border border-blue-200/70 dark:border-blue-400/20 bg-blue-50/60 dark:bg-blue-500/10 px-3 py-3">
                   <input type="file" id="fileInput"
                     class="block w-full text-sm text-slate-600 dark:text-slate-300
@@ -126,13 +144,13 @@
                       dark:file:bg-blue-500/15 dark:file:text-blue-200
                       hover:file:bg-blue-600/15 dark:hover:file:bg-blue-500/20 cursor-pointer"/>
                   <div id="fileHelp" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
-                    1 tık yeterli: .txt mapping seç, otomatik yüklenir.
+                    Alternatif: Kendi .txt mapping dosyanı elle seçebilirsin.
                   </div>
                 </div>
               </div>
 
               <!-- Search -->
-              <div class="md:col-span-5">
+              <div class="md:col-span-4">
                 <label id="labelSearch" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Arama</label>
                 <div class="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500/50 transition">
                   <span class="text-slate-400">⌕</span>
@@ -145,7 +163,7 @@
               </div>
 
               <!-- Filters -->
-              <div class="md:col-span-3">
+              <div class="md:col-span-2">
                 <label id="labelFilter" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Filtre</label>
                 <div class="flex flex-wrap gap-2">
                   <button id="filterAll" data-filter="ALL" class="filterBtn px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">
@@ -264,6 +282,8 @@
       ALAN: ["alan", "field"]
     };
 
+    const versionSelect = document.getElementById('versionSelect');
+    const loadVersionBtn = document.getElementById('loadVersionBtn');
     const fileInput = document.getElementById('fileInput');
     const searchInput = document.getElementById('searchInput');
     const dataTable = document.getElementById('dataTable');
@@ -299,11 +319,19 @@
 
     const I18N = {
       tr: {
-        subtitle: "Sadece dosya seç → otomatik hazır görünüm • Hızlı filtre • Copy tools",
+        subtitle: "Sürüm seç veya dosya yükle → otomatik hazır görünüm • Hızlı filtre • Copy tools",
         theme: "Tema",
         exportCsv: "Export CSV",
-        file: "Dosya",
-        fileHelp: "1 tık yeterli: .txt mapping seç, otomatik yüklenir.",
+        version: "Versiyon",
+        versionPlaceholder: "Versiyon seç...",
+        versionHelp: "version/versions.json (veya versions/versions.json) içinden sürümler listelenir.",
+        loadVersion: "Yükle",
+        loadingVersion: "Yükleniyor...",
+        versionLoaded: "Versiyon yüklendi",
+        versionLoadFailed: "Versiyon yüklenemedi",
+        versionListMissing: "Versiyon listesi bulunamadı (version/versions.json veya versions/versions.json)",
+        file: "Özel Dosya",
+        fileHelp: "Alternatif: Kendi .txt mapping dosyanı elle seçebilirsin.",
         search: "Arama",
         searchPlaceholder: "Sınıf, metod veya alan ara... (örn: net.minecraft.client.Minecraft)",
         clear: "Temizle",
@@ -327,7 +355,7 @@
         pickFileFirst: "Önce dosya yükle 🙂",
         classRecord: "Sınıf kaydı",
         parent: "Parent",
-        statsSelectFile: "Lütfen bir dosya seçin...",
+        statsSelectFile: "Lütfen bir sürüm seçin veya özel dosya yükleyin...",
         statsLoaded: "{count} kayıt yüklendi • Dosya seçildiği anda hazır.",
         statsDefault: "{count} kayıt (Class collapse aktif){suffix}",
         statsFound: "Bulunan: {count} eşleşme • {classes} sınıf • En yakın: {best}{suffix}",
@@ -338,11 +366,19 @@
         sourceFile: "Kaynak"
       },
       en: {
-        subtitle: "Just pick file → auto-ready view • Fast filters • Copy tools",
+        subtitle: "Pick a version or upload a file → auto-ready view • Fast filters • Copy tools",
         theme: "Theme",
         exportCsv: "Export CSV",
-        file: "File",
-        fileHelp: "One click: choose .txt mapping, it loads automatically.",
+        version: "Version",
+        versionPlaceholder: "Select version...",
+        versionHelp: "Versions are read from version/versions.json (or versions/versions.json).",
+        loadVersion: "Load",
+        loadingVersion: "Loading...",
+        versionLoaded: "Version loaded",
+        versionLoadFailed: "Failed to load version",
+        versionListMissing: "Version list not found (version/versions.json or versions/versions.json)",
+        file: "Custom File",
+        fileHelp: "Alternative: choose your own .txt mapping manually.",
         search: "Search",
         searchPlaceholder: "Search class, method or field... (e.g. net.minecraft.client.Minecraft)",
         clear: "Clear",
@@ -366,7 +402,7 @@
         pickFileFirst: "Load a file first 🙂",
         classRecord: "Class record",
         parent: "Parent",
-        statsSelectFile: "Please select a file...",
+        statsSelectFile: "Please select a version or upload a custom file...",
         statsLoaded: "{count} records loaded • Ready right after file selection.",
         statsDefault: "{count} records (Class collapse enabled){suffix}",
         statsFound: "Found: {count} matches • {classes} classes • Best: {best}{suffix}",
@@ -399,6 +435,10 @@
       subtitle.textContent = t("subtitle");
       themeLabel.textContent = t("theme");
       exportLabel.textContent = t("exportCsv");
+      document.getElementById("labelVersion").textContent = t("version");
+      versionSelect.options[0].textContent = t("versionPlaceholder");
+      loadVersionBtn.textContent = t("loadVersion");
+      document.getElementById("versionHelp").textContent = t("versionHelp");
       document.getElementById("labelFile").textContent = t("file");
       document.getElementById("fileHelp").textContent = t("fileHelp");
       document.getElementById("labelSearch").textContent = t("search");
@@ -441,6 +481,7 @@
     const savedTheme = localStorage.getItem("mc_theme") || "light";
     setTheme(savedTheme);
     setLanguage(currentLang);
+    initVersionSelector();
 
     themeBtn.addEventListener("click", () => {
       const current = document.documentElement.getAttribute("data-theme");
@@ -475,26 +516,121 @@
       }
     }
 
-    // File read
+    const VERSION_MANIFEST_CANDIDATES = [
+      "version/versions.json",
+      "versions/versions.json"
+    ];
+
+    async function initVersionSelector() {
+      try {
+        let manifestData = null;
+
+        for (const manifestPath of VERSION_MANIFEST_CANDIDATES) {
+          try {
+            const res = await fetch(manifestPath, { cache: "no-store" });
+            if (!res.ok) continue;
+            manifestData = await res.json();
+            break;
+          } catch {
+            // sıradaki manifest adayını dene
+          }
+        }
+
+        if (!manifestData) throw new Error("manifest-not-found");
+
+        const list = Array.isArray(manifestData)
+          ? manifestData
+          : (Array.isArray(manifestData.versions) ? manifestData.versions : []);
+
+        const normalized = [];
+        for (const item of list) {
+          if (typeof item === "string") {
+            normalized.push({ value: item, label: item, path: `version/${item}/mapping.txt` });
+            continue;
+          }
+          if (item && typeof item === "object") {
+            const value = String(item.value || item.version || item.name || "").trim();
+            if (!value) continue;
+            normalized.push({
+              value,
+              label: String(item.label || value),
+              path: String(item.path || `version/${value}/mapping.txt`)
+            });
+          }
+        }
+
+        versionSelect.innerHTML = `<option value="">${escapeHtml(t("versionPlaceholder"))}</option>`;
+        for (const v of normalized) {
+          const opt = document.createElement("option");
+          opt.value = v.value;
+          opt.textContent = v.label;
+          opt.dataset.path = v.path.replaceAll("\\", "/");
+          versionSelect.appendChild(opt);
+        }
+
+        const hasVersions = normalized.length > 0;
+        versionSelect.disabled = !hasVersions;
+        loadVersionBtn.disabled = !hasVersions;
+        if (!hasVersions) {
+          stats.innerText = t("versionListMissing");
+        }
+      } catch (err) {
+        versionSelect.disabled = true;
+        loadVersionBtn.disabled = true;
+        stats.innerText = t("versionListMissing");
+      }
+    }
+
+    function loadMappingText(text, toastMessage) {
+      currentFilter = "ALL";
+      expandedClasses.clear();
+      searchInput.value = "";
+      setActiveFilterButton("ALL");
+
+      parseMappings(text);
+
+      const firstClass = allData.find(x => x.t === "SINIF");
+      if (firstClass) expandedClasses.add(firstClass.r);
+
+      applyFiltersAndRender();
+      if (toastMessage) showToast(toastMessage);
+    }
+
+    async function loadSelectedVersion() {
+      const opt = versionSelect.selectedOptions[0];
+      const path = opt?.dataset?.path;
+      if (!path) return;
+
+      const oldText = loadVersionBtn.textContent;
+      loadVersionBtn.disabled = true;
+      loadVersionBtn.textContent = t("loadingVersion");
+
+      try {
+        const res = await fetch(path, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        loadMappingText(text, `${t("versionLoaded")}: ${opt.textContent} ✅`);
+      } catch (err) {
+        showToast(`${t("versionLoadFailed")}: ${opt.textContent || "-"}`);
+      } finally {
+        loadVersionBtn.disabled = versionSelect.disabled;
+        loadVersionBtn.textContent = oldText || t("loadVersion");
+      }
+    }
+
+    loadVersionBtn.addEventListener("click", loadSelectedVersion);
+    versionSelect.addEventListener("change", () => {
+      if (versionSelect.value) loadSelectedVersion();
+    });
+
+    // File read (custom mapping)
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        currentFilter = "ALL";
-        expandedClasses.clear();
-        searchInput.value = "";
-        setActiveFilterButton("ALL");
-
-        parseMappings(event.target.result);
-
-        // boom modu: dosya seçince direkt ilk sınıf açılıp görünüm hazır olsun
-        const firstClass = allData.find(x => x.t === "SINIF");
-        if (firstClass) expandedClasses.add(firstClass.r);
-
-        applyFiltersAndRender();
-        showToast(t("fileLoaded"));
+        loadMappingText(event.target.result, t("fileLoaded"));
       };
       reader.readAsText(file);
     });
@@ -890,6 +1026,12 @@ function applyFiltersAndRender() {
   // tür filtresi
   if (currentFilter !== "ALL") {
     data = data.filter(x => x.t === currentFilter);
+  }
+
+  if (!allData.length) {
+    dataTable.innerHTML = "";
+    stats.innerText = t("statsSelectFile");
+    return;
   }
 
   if (!highlightTerm && !query.onlyTypeQuery) {
