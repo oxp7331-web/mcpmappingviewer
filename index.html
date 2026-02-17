@@ -1,0 +1,1035 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MC Mapping Viewer - Ultra Fast</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Tailwind + custom polish */
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(17, 24, 39, .72);
+      --panel-solid: #0f172a;
+      --line: rgba(255,255,255,.08);
+    }
+
+    /* Light theme defaults (Tailwind classes handle most) */
+    [data-theme="dark"] body {
+      background: radial-gradient(1100px 600px at 20% -10%, rgba(59,130,246,.25), transparent 60%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(34,197,94,.18), transparent 60%),
+                  var(--bg);
+    }
+
+    /* Table row styles */
+    .class-row { font-weight: 700; }
+    .row-hover:hover { filter: brightness(1.03); }
+
+    /* Sticky topbar blur */
+    .glass {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Search highlight */
+    mark.hl {
+      padding: 0 .18rem;
+      border-radius: .25rem;
+    }
+
+    /* Nice scrollbar */
+    .nice-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .nice-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 999px; }
+    [data-theme="dark"] .nice-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); }
+
+    /* Copy button */
+    .copybtn { opacity:.0; transition: opacity .15s ease; }
+    tr:hover .copybtn { opacity:1; }
+
+    /* Easy mode UI */
+    .easy-pill { border: 1px solid rgba(59,130,246,.25); background: rgba(59,130,246,.08); }
+    [data-theme="dark"] .easy-pill { border-color: rgba(96,165,250,.22); background: rgba(59,130,246,.15); }
+  </style>
+
+  <script>
+    tailwind.config = {
+      darkMode: ["class", '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          boxShadow: {
+            soft: "0 12px 34px rgba(0,0,0,.18)",
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="p-4 md:p-8 text-slate-900 dark:text-slate-100">
+  <div class="max-w-6xl mx-auto">
+
+    <!-- TOP BAR -->
+    <div class="sticky top-4 z-20">
+      <div class="glass border border-slate-200/70 dark:border-white/10 rounded-2xl shadow-soft bg-white/80 dark:bg-[rgba(15,23,42,.72)] overflow-hidden">
+        <div class="p-5 md:p-6">
+          <div class="flex flex-col gap-4">
+
+            <!-- Header Row -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-400/20 flex items-center justify-center">
+                  <span class="text-blue-700 dark:text-blue-300 font-black">MC</span>
+                </div>
+                <div>
+                  <h1 class="text-lg md:text-xl font-extrabold tracking-tight">
+                    Minecraft Mapping Explorer
+                    <span class="ml-2 text-blue-600 dark:text-blue-300 text-sm font-semibold">v2.0</span>
+                  </h1>
+                  <p id="subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Sadece dosya seç → otomatik hazır görünüm • Hızlı filtre • Copy tools
+                  </p>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-2">
+                <select id="languageSelect" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 text-sm font-semibold">
+                  <option value="tr">TR</option>
+                  <option value="en">EN</option>
+                </select>
+
+                <button id="themeBtn"
+                  class="px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">
+                  <span id="themeIcon">🌙</span>
+                  <span id="themeLabel" class="ml-1 text-sm font-semibold">Tema</span>
+                </button>
+
+                <button id="exportBtn"
+                  class="px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition text-sm font-semibold">
+                  <span id="exportLabel">Export CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <!-- File -->
+              <div class="md:col-span-4">
+                <label id="labelFile" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Dosya</label>
+                <div class="rounded-2xl border border-blue-200/70 dark:border-blue-400/20 bg-blue-50/60 dark:bg-blue-500/10 px-3 py-3">
+                  <input type="file" id="fileInput"
+                    class="block w-full text-sm text-slate-600 dark:text-slate-300
+                      file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0
+                      file:text-sm file:font-bold
+                      file:bg-blue-600/10 file:text-blue-700
+                      dark:file:bg-blue-500/15 dark:file:text-blue-200
+                      hover:file:bg-blue-600/15 dark:hover:file:bg-blue-500/20 cursor-pointer"/>
+                  <div id="fileHelp" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                    1 tık yeterli: .txt mapping seç, otomatik yüklenir.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Search -->
+              <div class="md:col-span-5">
+                <label id="labelSearch" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Arama</label>
+                <div class="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500/50 transition">
+                  <span class="text-slate-400">⌕</span>
+                  <input type="text" id="searchInput" placeholder="Sınıf, metod veya alan ara... (örn: net.minecraft.client.Minecraft)"
+                    class="w-full bg-transparent outline-none text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"/>
+                  <button id="clearBtn" class="text-xs font-bold px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition">
+                    Temizle
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filters -->
+              <div class="md:col-span-3">
+                <label id="labelFilter" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Filtre</label>
+                <div class="flex flex-wrap gap-2">
+                  <button id="filterAll" data-filter="ALL" class="filterBtn px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">
+                    Tümü
+                  </button>
+                  <button id="filterClass" data-filter="SINIF" class="filterBtn px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">
+                    Sınıf
+                  </button>
+                  <button id="filterMethod" data-filter="METOD" class="filterBtn px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">
+                    Metod
+                  </button>
+                  <button id="filterField" data-filter="ALAN" class="filterBtn px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">
+                    Alan
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats / Hint -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div id="stats" class="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                Lütfen bir dosya seçin...
+              </div>
+
+              <div id="hintText" class="text-xs text-slate-500 dark:text-slate-400">
+                İpucu: Hiç yazmadan chip'e bas → anında filtrelenir
+              </div>
+            </div>
+
+            <!-- Quick summary + quick actions -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div class="md:col-span-7 flex flex-wrap gap-2" id="summaryBadges">
+                <span class="easy-pill text-xs font-bold px-3 py-1.5 rounded-xl"><span id="summaryClassLabel">SINIF</span>: <span id="countClass">0</span></span>
+                <span class="easy-pill text-xs font-bold px-3 py-1.5 rounded-xl"><span id="summaryMethodLabel">METOD</span>: <span id="countMethod">0</span></span>
+                <span class="easy-pill text-xs font-bold px-3 py-1.5 rounded-xl"><span id="summaryFieldLabel">ALAN</span>: <span id="countField">0</span></span>
+              </div>
+              <div class="md:col-span-5 flex flex-wrap gap-2 md:justify-end" id="quickChips">
+                <button data-q="minecraft" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">Minecraft</button>
+                <button data-q="client" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">Client</button>
+                <button data-q="render" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">Render</button>
+                <button data-q="gui" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition">GUI</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail drawer -->
+        <div id="detailPanel" class="hidden border-t border-slate-200/70 dark:border-white/10 bg-white/60 dark:bg-white/5 px-5 md:px-6 py-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span id="detailType" class="text-xs font-black px-2 py-1 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">—</span>
+                <span id="detailParent" class="text-xs text-slate-600 dark:text-slate-300 truncate">—</span>
+              </div>
+              <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 p-3">
+                  <div id="detailDeobfLabel" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Deobf</div>
+                  <div id="detailDeobf" class="font-mono text-sm break-all">—</div>
+                </div>
+                <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 p-3">
+                  <div id="detailObfLabel" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Obf</div>
+                  <div id="detailObf" class="font-mono text-sm break-all">—</div>
+                </div>
+                <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 p-3">
+                  <div id="detailRetLabel" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Detay / Dönüş</div>
+                  <div id="detailRet" class="font-mono text-sm break-all">—</div>
+                </div>
+              </div>
+            </div>
+
+            <button id="closeDetail" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition text-sm font-bold">
+              <span id="closeDetailText">Kapat</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="mt-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/30 shadow-soft overflow-hidden">
+      <div class="overflow-auto max-h-[70vh] nice-scroll">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead class="sticky top-0 z-10 bg-slate-900 text-white">
+            <tr>
+              <th id="thType" class="p-3 w-24">Tür</th>
+              <th id="thReal" class="p-3 w-[38%]">Gerçek İsim (Deobf)</th>
+              <th id="thObf" class="p-3 w-[26%]">Kod İsmi (Obf)</th>
+              <th id="thDetail" class="p-3">Detaylar / Dönüş</th>
+            </tr>
+          </thead>
+          <tbody id="dataTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 hidden px-4 py-3 rounded-xl bg-slate-900 text-white text-sm font-semibold shadow-soft">
+      Kopyalandı ✅
+    </div>
+  </div>
+
+  <script>
+    let allData = [];
+    let currentFilter = "ALL";
+    let lastQuery = "";
+    let lastQueryRegex = null;
+    let visibleItems = [];
+
+    const MAX_RENDER_ROWS = 1800;
+    const AUTO_EXPAND_SEARCH_CLASS_LIMIT = 30;
+    const SEARCH_MEMBER_LIMIT_PER_CLASS = 220;
+
+    const TYPE_QUERY_ALIASES = {
+      SINIF: ["sinif", "sınıf", "class"],
+      METOD: ["metod", "method"],
+      ALAN: ["alan", "field"]
+    };
+
+    const fileInput = document.getElementById('fileInput');
+    const searchInput = document.getElementById('searchInput');
+    const dataTable = document.getElementById('dataTable');
+    const stats = document.getElementById('stats');
+
+    const languageSelect = document.getElementById('languageSelect');
+    const subtitle = document.getElementById('subtitle');
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeLabel = document.getElementById('themeLabel');
+
+    const clearBtn = document.getElementById('clearBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const exportLabel = document.getElementById('exportLabel');
+
+    const detailPanel = document.getElementById('detailPanel');
+    const closeDetail = document.getElementById('closeDetail');
+
+    const detailType = document.getElementById('detailType');
+    const detailParent = document.getElementById('detailParent');
+    const detailDeobf = document.getElementById('detailDeobf');
+    const detailObf = document.getElementById('detailObf');
+    const detailRet = document.getElementById('detailRet');
+
+    const expandedClasses = new Set(); // açık olan class'lar
+
+    const countClass = document.getElementById('countClass');
+    const countMethod = document.getElementById('countMethod');
+    const countField = document.getElementById('countField');
+    const quickChips = document.getElementById('quickChips');
+
+    const toast = document.getElementById('toast');
+
+    const I18N = {
+      tr: {
+        subtitle: "Sadece dosya seç → otomatik hazır görünüm • Hızlı filtre • Copy tools",
+        theme: "Tema",
+        exportCsv: "Export CSV",
+        file: "Dosya",
+        fileHelp: "1 tık yeterli: .txt mapping seç, otomatik yüklenir.",
+        search: "Arama",
+        searchPlaceholder: "Sınıf, metod veya alan ara... (örn: net.minecraft.client.Minecraft)",
+        clear: "Temizle",
+        filter: "Filtre",
+        filterAll: "Tümü",
+        filterClass: "Sınıf",
+        filterMethod: "Metod",
+        filterField: "Alan",
+        hint: "İpucu: Hiç yazmadan chip'e bas → anında filtrelenir",
+        summaryClass: "SINIF",
+        summaryMethod: "METOD",
+        summaryField: "ALAN",
+        type: "Tür",
+        realName: "Gerçek İsim (Deobf)",
+        obfName: "Kod İsmi (Obf)",
+        detailsRet: "Detaylar / Dönüş",
+        detailRet: "Detay / Dönüş",
+        close: "Kapat",
+        copied: "Kopyalandı ✅",
+        fileLoaded: "Dosya yüklendi ⚡ Hazır",
+        pickFileFirst: "Önce dosya yükle 🙂",
+        classRecord: "Sınıf kaydı",
+        parent: "Parent",
+        statsSelectFile: "Lütfen bir dosya seçin...",
+        statsLoaded: "{count} kayıt yüklendi • Dosya seçildiği anda hazır.",
+        statsDefault: "{count} kayıt (Class collapse aktif){suffix}",
+        statsFound: "Bulunan: {count} eşleşme • {classes} sınıf • En yakın: {best}{suffix}",
+        perfSuffix: " • Görünüm performans için sınırlandı",
+        typeClass: "SINIF",
+        typeMethod: "METOD",
+        typeField: "ALAN",
+        sourceFile: "Kaynak"
+      },
+      en: {
+        subtitle: "Just pick file → auto-ready view • Fast filters • Copy tools",
+        theme: "Theme",
+        exportCsv: "Export CSV",
+        file: "File",
+        fileHelp: "One click: choose .txt mapping, it loads automatically.",
+        search: "Search",
+        searchPlaceholder: "Search class, method or field... (e.g. net.minecraft.client.Minecraft)",
+        clear: "Clear",
+        filter: "Filter",
+        filterAll: "All",
+        filterClass: "Class",
+        filterMethod: "Method",
+        filterField: "Field",
+        hint: "Tip: Click a chip without typing → instant filter",
+        summaryClass: "CLASS",
+        summaryMethod: "METHOD",
+        summaryField: "FIELD",
+        type: "Type",
+        realName: "Real Name (Deobf)",
+        obfName: "Code Name (Obf)",
+        detailsRet: "Details / Return",
+        detailRet: "Detail / Return",
+        close: "Close",
+        copied: "Copied ✅",
+        fileLoaded: "File loaded ⚡ Ready",
+        pickFileFirst: "Load a file first 🙂",
+        classRecord: "Class record",
+        parent: "Parent",
+        statsSelectFile: "Please select a file...",
+        statsLoaded: "{count} records loaded • Ready right after file selection.",
+        statsDefault: "{count} records (Class collapse enabled){suffix}",
+        statsFound: "Found: {count} matches • {classes} classes • Best: {best}{suffix}",
+        perfSuffix: " • View is limited for performance",
+        typeClass: "CLASS",
+        typeMethod: "METHOD",
+        typeField: "FIELD",
+        sourceFile: "Source"
+      }
+    };
+
+    let currentLang = localStorage.getItem("mc_lang") || "tr";
+
+    function t(key) {
+      return (I18N[currentLang] && I18N[currentLang][key]) || I18N.tr[key] || key;
+    }
+
+    function tf(key, vars = {}) {
+      return Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), t(key));
+    }
+
+    function typeLabel(type) {
+      if (type === "SINIF") return t("typeClass");
+      if (type === "METOD") return t("typeMethod");
+      if (type === "ALAN") return t("typeField");
+      return type;
+    }
+
+    function updateStaticTexts() {
+      subtitle.textContent = t("subtitle");
+      themeLabel.textContent = t("theme");
+      exportLabel.textContent = t("exportCsv");
+      document.getElementById("labelFile").textContent = t("file");
+      document.getElementById("fileHelp").textContent = t("fileHelp");
+      document.getElementById("labelSearch").textContent = t("search");
+      searchInput.placeholder = t("searchPlaceholder");
+      clearBtn.textContent = t("clear");
+      document.getElementById("labelFilter").textContent = t("filter");
+      document.getElementById("filterAll").textContent = t("filterAll");
+      document.getElementById("filterClass").textContent = t("filterClass");
+      document.getElementById("filterMethod").textContent = t("filterMethod");
+      document.getElementById("filterField").textContent = t("filterField");
+      document.getElementById("hintText").textContent = t("hint");
+      document.getElementById("summaryClassLabel").textContent = t("summaryClass");
+      document.getElementById("summaryMethodLabel").textContent = t("summaryMethod");
+      document.getElementById("summaryFieldLabel").textContent = t("summaryField");
+      document.getElementById("detailDeobfLabel").textContent = "Deobf";
+      document.getElementById("detailObfLabel").textContent = "Obf";
+      document.getElementById("detailRetLabel").textContent = t("detailRet");
+      document.getElementById("closeDetailText").textContent = t("close");
+      document.getElementById("thType").textContent = t("type");
+      document.getElementById("thReal").textContent = t("realName");
+      document.getElementById("thObf").textContent = t("obfName");
+      document.getElementById("thDetail").textContent = t("detailsRet");
+    }
+
+    // Theme
+    function setTheme(mode) {
+      document.documentElement.setAttribute("data-theme", mode);
+      localStorage.setItem("mc_theme", mode);
+      themeIcon.textContent = mode === "dark" ? "☀️" : "🌙";
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang === "en" ? "en" : "tr";
+      localStorage.setItem("mc_lang", currentLang);
+      languageSelect.value = currentLang;
+      updateStaticTexts();
+      applyFiltersAndRender();
+    }
+
+    const savedTheme = localStorage.getItem("mc_theme") || "light";
+    setTheme(savedTheme);
+    setLanguage(currentLang);
+
+    themeBtn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      setTheme(current === "dark" ? "light" : "dark");
+    });
+
+    languageSelect.addEventListener("change", () => {
+      setLanguage(languageSelect.value);
+    });
+
+    // Toast
+    function showToast(msg = t("copied")) {
+      toast.textContent = msg;
+      toast.classList.remove("hidden");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.add("hidden"), 1200);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast();
+      } catch {
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        showToast();
+      }
+    }
+
+    // File read
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        currentFilter = "ALL";
+        expandedClasses.clear();
+        searchInput.value = "";
+        setActiveFilterButton("ALL");
+
+        parseMappings(event.target.result);
+
+        // boom modu: dosya seçince direkt ilk sınıf açılıp görünüm hazır olsun
+        const firstClass = allData.find(x => x.t === "SINIF");
+        if (firstClass) expandedClasses.add(firstClass.r);
+
+        applyFiltersAndRender();
+        showToast(t("fileLoaded"));
+      };
+      reader.readAsText(file);
+    });
+
+    function setActiveFilterButton(filterName) {
+      document.querySelectorAll(".filterBtn").forEach(b => {
+        b.classList.remove("ring-2","ring-blue-500/40","bg-white");
+        b.classList.add("bg-white/70","dark:bg-white/5");
+        if (b.dataset.filter === filterName) {
+          b.classList.add("ring-2","ring-blue-500/40");
+        }
+      });
+    }
+
+    function updateSummary() {
+      let cls = 0, met = 0, alan = 0;
+      for (const x of allData) {
+        if (x.t === "SINIF") cls++;
+        else if (x.t === "METOD") met++;
+        else if (x.t === "ALAN") alan++;
+      }
+      countClass.textContent = cls.toLocaleString("tr-TR");
+      countMethod.textContent = met.toLocaleString("tr-TR");
+      countField.textContent = alan.toLocaleString("tr-TR");
+    }
+
+    // Parse mappings (inner class + sourceFile meta destekli)
+    function parseMappings(text) {
+      allData = [];
+      const lines = text.split('\n');
+      let currentClass = "";
+      let lastClassItem = null;
+      const classFileMap = new Map();
+
+      for (const lineRaw of lines) {
+        const line = lineRaw.replace(/\r$/, "");
+        if (!line.trim()) continue;
+
+        if (line.startsWith('#')) {
+          const fileMetaMatch = line.match(/"fileName"\s*:\s*"([^"]+)"/i);
+          if (fileMetaMatch && currentClass) {
+            const fileName = fileMetaMatch[1];
+            classFileMap.set(currentClass, fileName);
+            if (lastClassItem && lastClassItem.r === currentClass) {
+              lastClassItem.f = fileName;
+            }
+          }
+          continue;
+        }
+
+        const classMatch = line.match(/^([\w\.\$]+)\s+->\s+([\w\$]+):/);
+        if (classMatch) {
+          currentClass = classMatch[1];
+          const clsItem = { t: 'SINIF', r: classMatch[1], o: classMatch[2], d: '---', p: '', f: '' };
+          allData.push(clsItem);
+          lastClassItem = clsItem;
+          continue;
+        }
+
+        const memberMatch = line.match(/^\s+(?:\d+:\d+:)?([\w\.\$<>\[\]]+)\s+([\w\$<>]+)(?:\(.*\))?\s*->\s*([\w\$<>]+)/);
+        if (memberMatch) {
+          const isMethod = line.includes('(');
+          allData.push({
+            t: isMethod ? 'METOD' : 'ALAN',
+            r: memberMatch[2],
+            o: memberMatch[3],
+            d: memberMatch[1],
+            p: currentClass,
+            f: classFileMap.get(currentClass) || ''
+          });
+        }
+      }
+
+      updateSummary();
+      stats.innerText = tf("statsLoaded", { count: allData.length.toLocaleString("tr-TR") });
+    }
+
+    // Highlight helper
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+    function highlight(text) {
+      const safe = escapeHtml(text ?? "");
+      if (!lastQueryRegex) return safe;
+      return safe.replace(lastQueryRegex, (m) => `<mark class="hl bg-amber-200/70 dark:bg-amber-400/25 text-slate-900 dark:text-slate-100">${m}</mark>`);
+    }
+
+    // Render (fast with fragment)
+function renderTable(data) {
+  // data: filtrelenmiş allData
+  // 1) class -> members grupla
+  const classes = [];
+  const membersByClass = new Map();
+
+  for (const item of data) {
+    if (item.t === "SINIF") {
+      classes.push(item);
+      if (!membersByClass.has(item.r)) membersByClass.set(item.r, []);
+    } else {
+      const key = item.p || "";
+      if (!membersByClass.has(key)) membersByClass.set(key, []);
+      membersByClass.get(key).push(item);
+    }
+  }
+
+  // performans limiti: çok class varsa sınıf sayısını kıs
+  const classLimit = classes.length > 2500 ? 800 : classes.length;
+
+  const frag = document.createDocumentFragment();
+  let renderedRows = 0;
+  let truncated = classLimit < classes.length;
+  visibleItems = [];
+
+  for (let i = 0; i < classLimit && renderedRows < MAX_RENDER_ROWS; i++) {
+    const cls = classes[i];
+    const key = cls.r;
+    const isOpen = expandedClasses.has(key);
+
+    // CLASS ROW
+    const tr = document.createElement("tr");
+    tr.className =
+      "row-hover cursor-pointer border-b border-slate-100 dark:border-white/10 " +
+      "bg-blue-50/60 dark:bg-blue-500/10 class-row";
+
+    tr.dataset.vi = String(visibleItems.push(cls) - 1);
+
+    tr.innerHTML = `
+      <td class="p-3 text-xs font-black">
+        <span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-blue-600 text-white">
+          ${typeLabel("SINIF")}
+        </span>
+      </td>
+      <td class="p-3 font-mono text-[13px]">
+        <div class="flex items-start gap-2">
+          <button class="shrink-0 w-8 h-8 rounded-xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition"
+                  data-toggle="${escapeHtml(key)}"
+                  title="Aç/Kapat">
+            ${isOpen ? "▾" : "▸"}
+          </button>
+          <div class="min-w-0">
+            <div class="break-all">${highlight(cls.r)}</div>
+            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+              ${cls.f ? `${t("sourceFile")}: ${escapeHtml(cls.f)}` : ""}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td class="p-3 font-mono text-[13px] text-blue-700 dark:text-blue-300 font-extrabold">
+        <div class="flex items-start gap-2">
+          <div class="min-w-0 break-all">${highlight(cls.o)}</div>
+          <button class="copybtn shrink-0 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-bold"
+                  data-copy="${escapeHtml(cls.o)}">📋</button>
+        </div>
+      </td>
+      <td class="p-3 text-xs text-slate-500 dark:text-slate-400">
+        <span class="font-mono">---</span>
+      </td>
+    `;
+    frag.appendChild(tr);
+    renderedRows++;
+
+    // MEMBERS
+    const members = membersByClass.get(key) || [];
+    if (isOpen && renderedRows < MAX_RENDER_ROWS) {
+      // üyeler çoksa sınır koy (aşırı şişmesin)
+      const memberLimit = members.length > 5000 ? 1200 : members.length;
+
+      for (let j = 0; j < memberLimit && renderedRows < MAX_RENDER_ROWS; j++) {
+        const item = members[j];
+        const mtr = document.createElement("tr");
+        mtr.className =
+          "row-hover cursor-pointer border-b border-slate-100 dark:border-white/10 " +
+          "bg-white dark:bg-transparent";
+
+        mtr.dataset.vi = String(visibleItems.push(item) - 1);
+
+        const badgeClass =
+          item.t === "METOD"
+            ? "bg-emerald-600 text-white"
+            : "bg-slate-900 text-white dark:bg-white dark:text-slate-900";
+
+        mtr.innerHTML = `
+          <td class="p-3 text-xs font-black">
+            <span class="inline-flex items-center px-2 py-1 rounded-lg ${badgeClass}">
+              ${typeLabel(item.t)}
+            </span>
+          </td>
+          <td class="p-3 font-mono text-[13px]">
+            <div class="flex items-start gap-2">
+              <div class="min-w-0 break-all">${highlight(item.r)}</div>
+              <button class="copybtn shrink-0 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-bold"
+                data-copy="${escapeHtml(item.r)}">📋</button>
+            </div>
+          </td>
+          <td class="p-3 font-mono text-[13px] text-blue-700 dark:text-blue-300 font-extrabold">
+            <div class="flex items-start gap-2">
+              <div class="min-w-0 break-all">${highlight(item.o)}</div>
+              <button class="copybtn shrink-0 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-bold"
+                data-copy="${escapeHtml(item.o)}">📋</button>
+            </div>
+          </td>
+          <td class="p-3 text-xs text-slate-500 dark:text-slate-400">
+            <span class="font-mono">${highlight(item.d)}</span>
+          </td>
+        `;
+
+        frag.appendChild(mtr);
+        renderedRows++;
+      }
+
+      if (members.length > memberLimit) truncated = true;
+    }
+  }
+
+  if (renderedRows >= MAX_RENDER_ROWS) truncated = true;
+
+  dataTable.innerHTML = "";
+  dataTable.appendChild(frag);
+
+  return { renderedRows, truncated };
+}
+
+
+    function openDetails(item) {
+      detailType.textContent = item.t;
+      detailParent.textContent = item.p ? `${t("parent")}: ${item.p}` : (item.t === "SINIF" ? t("classRecord") : "—");
+      detailDeobf.textContent = item.r;
+      detailObf.textContent = item.o;
+      detailRet.textContent = item.d;
+
+      detailPanel.classList.remove("hidden");
+      detailPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    closeDetail.addEventListener("click", () => {
+      detailPanel.classList.add("hidden");
+    });
+
+    // Filters
+    document.querySelectorAll(".filterBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentFilter = btn.dataset.filter;
+        setActiveFilterButton(currentFilter);
+        applyFiltersAndRender();
+      });
+    });
+
+    // Quick chips (typing yok, direkt tıkla)
+    quickChips.addEventListener("click", (e) => {
+      const chip = e.target.closest("button[data-q]");
+      if (!chip) return;
+      searchInput.value = chip.dataset.q;
+      requestAnimationFrame(applyFiltersAndRender);
+    });
+
+    // Search + debounce
+    let timeout = null;
+
+    function normalizeForSearch(q) {
+  let t = (q || "").trim().toLowerCase();
+  if (!t) return "";
+
+  t = t
+    .replace(/[ıİ]/g, "i")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[üÜ]/g, "u")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[çÇ]/g, "c");
+
+  // / ve \\ yazınca . gibi çalışsın
+  t = t.replace(/[\\/]/g, ".");
+  return t;
+}
+
+function normalizeQuery(q) {
+  return normalizeForSearch(q);
+}
+
+function simpleClassName(full) {
+  const s = full || "";
+  const lastDot = s.lastIndexOf(".");
+  return lastDot >= 0 ? s.slice(lastDot + 1) : s;
+}
+
+function getTypeHintFromToken(token) {
+  if (!token) return null;
+  for (const [typeName, aliases] of Object.entries(TYPE_QUERY_ALIASES)) {
+    if (aliases.includes(token)) return typeName;
+  }
+  return null;
+}
+
+function buildQueryContext(rawInput) {
+  const rawTerm = normalizeQuery(rawInput);
+  const isJavaQuery = rawTerm.endsWith(".java");
+  const baseTerm = isJavaQuery ? rawTerm.slice(0, -5) : rawTerm;
+
+  const rawTokens = baseTerm.split(/[\s._\-]+/).filter(Boolean);
+  const typeHints = new Set();
+  const textTokens = [];
+
+  for (const tk of rawTokens) {
+    const hint = getTypeHintFromToken(tk);
+    if (hint) typeHints.add(hint);
+    else textTokens.push(tk);
+  }
+
+  return {
+    rawTerm,
+    baseTerm,
+    isJavaQuery,
+    typeHints,
+    textTokens,
+    onlyTypeQuery: textTokens.length === 0 && typeHints.size > 0
+  };
+}
+
+function ensureSearchIndex(item) {
+  if (item.__idxReady) return;
+
+  const classFull = item.t === "SINIF" ? (item.r || "") : (item.p || "");
+  item.__nr = normalizeForSearch(item.r || "");
+  item.__no = normalizeForSearch(item.o || "");
+  item.__nd = normalizeForSearch(item.d || "");
+  item.__np = normalizeForSearch(item.p || "");
+  item.__nf = normalizeForSearch(item.f || "");
+  item.__classFull = normalizeForSearch(classFull);
+  item.__short = normalizeForSearch(simpleClassName(classFull));
+  item.__idxReady = true;
+}
+
+function computeSearchScore(item, ctx) {
+  ensureSearchIndex(item);
+
+  const r = item.__nr;
+  const o = item.__no;
+  const d = item.__nd;
+  const p = item.__np;
+  const f = item.__nf;
+  const classFull = item.__classFull;
+  const shortR = item.__short;
+
+  let score = 0;
+
+  if (ctx.onlyTypeQuery) {
+    return ctx.typeHints.has(item.t) ? 1800 : 0;
+  }
+
+  // type alias boost (field/alan, class/sinif, method/metod)
+  if (ctx.typeHints.has(item.t)) score += 950;
+
+  for (const tk of ctx.textTokens) {
+    if (shortR === tk) score += 1200;
+    if (classFull.endsWith(`.${tk}`) || classFull === tk) score += 980;
+    if (classFull.includes(tk)) score += 520;
+    if (f.includes(tk)) score += 620;
+    if (r.includes(tk)) score += 420;
+    if (p.includes(tk)) score += 300;
+    if (o === tk) score += 240;
+    if (o.includes(tk)) score += 140;
+    if (d.includes(tk)) score += 90;
+  }
+
+  if (ctx.isJavaQuery) {
+    const javaBase = ctx.baseTerm;
+    if (!javaBase) return score;
+
+    if (!f.includes(javaBase) && !classFull.includes(javaBase) && !shortR.includes(javaBase)) {
+      return 0;
+    }
+
+    if (f === ctx.rawTerm) score += 2000;
+    if (`${shortR}.java` === ctx.rawTerm) score += 1800;
+    if (shortR === javaBase) score += 1300;
+  }
+
+  return score;
+}
+
+
+function applyFiltersAndRender() {
+  const query = buildQueryContext(searchInput.value || "");
+
+  const highlightTerm = query.baseTerm;
+  lastQuery = highlightTerm;
+  lastQueryRegex = highlightTerm
+    ? new RegExp(highlightTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig")
+    : null;
+
+  let data = allData;
+
+  // tür filtresi
+  if (currentFilter !== "ALL") {
+    data = data.filter(x => x.t === currentFilter);
+  }
+
+  if (!highlightTerm && !query.onlyTypeQuery) {
+    const result = renderTable(data);
+    stats.innerText = tf("statsDefault", {
+      count: data.length.toLocaleString("tr-TR"),
+      suffix: result.truncated ? t("perfSuffix") : ""
+    });
+    return;
+  }
+
+  const classScores = new Map();
+  const itemScores = new Map();
+  const matchedMembersByClass = new Map();
+  let matchedItemCount = 0;
+
+  for (const item of data) {
+    const score = computeSearchScore(item, query);
+    if (score <= 0) continue;
+
+    matchedItemCount++;
+    itemScores.set(item, score);
+
+    const clsKey = item.t === "SINIF" ? item.r : item.p;
+    if (!clsKey) continue;
+
+    const oldScore = classScores.get(clsKey) || 0;
+    if (score > oldScore) classScores.set(clsKey, score);
+
+    if (item.t !== "SINIF") {
+      if (!matchedMembersByClass.has(clsKey)) matchedMembersByClass.set(clsKey, []);
+      matchedMembersByClass.get(clsKey).push(item);
+    }
+  }
+
+  const sortedClassKeys = [...classScores.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k]) => k);
+
+  // En iyi eşleşen sınıfları otomatik aç
+  for (let i = 0; i < sortedClassKeys.length && i < AUTO_EXPAND_SEARCH_CLASS_LIMIT; i++) {
+    expandedClasses.add(sortedClassKeys[i]);
+  }
+
+  const classByName = new Map();
+  for (const item of allData) {
+    if (item.t === "SINIF" && classScores.has(item.r)) {
+      classByName.set(item.r, item);
+    }
+  }
+
+  const out = [];
+  for (const clsKey of sortedClassKeys) {
+    const clsItem = classByName.get(clsKey);
+    if (clsItem) out.push(clsItem);
+
+    const members = matchedMembersByClass.get(clsKey) || [];
+    members.sort((a, b) => (itemScores.get(b) || 0) - (itemScores.get(a) || 0));
+    out.push(...members.slice(0, SEARCH_MEMBER_LIMIT_PER_CLASS));
+  }
+
+  const result = renderTable(out);
+  const bestClass = sortedClassKeys[0] ? simpleClassName(sortedClassKeys[0]) : "-";
+  stats.innerText = tf("statsFound", {
+    count: matchedItemCount.toLocaleString("tr-TR"),
+    classes: sortedClassKeys.length,
+    best: bestClass,
+    suffix: result.truncated ? t("perfSuffix") : ""
+  });
+}
+
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => requestAnimationFrame(applyFiltersAndRender), 280);
+    });
+
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      applyFiltersAndRender();
+      searchInput.focus();
+    });
+
+    // Table click delegation (tek listener, daha düşük GC ve daha az jank)
+    dataTable.addEventListener("click", (e) => {
+      const copyBtn = e.target.closest("button[data-copy]");
+      if (copyBtn) {
+        e.stopPropagation();
+        copyText(copyBtn.getAttribute("data-copy"));
+        return;
+      }
+
+      const toggleBtn = e.target.closest("button[data-toggle]");
+      if (toggleBtn) {
+        e.stopPropagation();
+        const key = toggleBtn.getAttribute("data-toggle");
+        if (expandedClasses.has(key)) expandedClasses.delete(key);
+        else expandedClasses.add(key);
+        requestAnimationFrame(applyFiltersAndRender);
+        return;
+      }
+
+      const row = e.target.closest("tr[data-vi]");
+      if (!row) return;
+      const idx = Number(row.dataset.vi);
+      const item = visibleItems[idx];
+      if (item) openDetails(item);
+    });
+
+    // Export CSV (filtered view)
+    exportBtn.addEventListener("click", () => {
+      if (!allData.length) return showToast(t("pickFileFirst"));
+
+      const term = (searchInput.value || "").trim().toLowerCase();
+      let data = allData;
+
+      if (currentFilter !== "ALL") data = data.filter(x => x.t === currentFilter);
+      if (term) {
+        data = data.filter(item =>
+          (item.r && item.r.toLowerCase().includes(term)) ||
+          (item.o && item.o.toLowerCase().includes(term)) ||
+          (item.p && item.p.toLowerCase().includes(term)) ||
+          (item.d && item.d.toLowerCase().includes(term))
+        );
+      }
+
+      const header = ["type","deobf","obf","detail","parent"];
+      const rows = data.map(x => [x.t, x.r, x.o, x.d, x.p].map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(","));
+      const csv = header.join(",") + "\n" + rows.join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mappings_export.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showToast(`${t("exportCsv")} ✅`);
+    });
+  </script>
+</body>
+</html>

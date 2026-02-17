@@ -62,10 +62,29 @@ net.minecraft.client.Minecraft -> abc:
 ## GitHub İçin Önerilen Depo Yapısı
 ```text
 .
-├─ mc_wiewer.html
+├─ index.html        # GitHub Pages ana giriş dosyası
+├─ mc_wiewer.html    # Orijinal dosya (opsiyonel, kaynak kopya)
 ├─ README.md
 └─ LICENSE (opsiyonel)
 ```
+
+## GitHub Pages (github.io) Yayınlama
+Bu proje artık doğrudan yayınlanmaya hazırdır çünkü `index.html` dosyası oluşturuldu.
+
+1. Bu dosyaları GitHub reposuna push et:
+   - `index.html`
+   - `mc_wiewer.html`
+   - `README.md`
+2. GitHub'da repo içine gir → **Settings** → **Pages**.
+3. **Build and deployment** bölümünde:
+   - **Source**: `Deploy from a branch`
+   - **Branch**: `main` (veya kullandığın branch)
+   - **Folder**: `/ (root)`
+4. **Save** de.
+5. 1-3 dakika içinde site şu formatta açılır:
+   - `https://kullanici-adin.github.io/repo-adi/`
+
+Not: Eğer özel domain kullanmayacaksan ekstra ayar gerekmez.
 
 ## Yol Haritası (Roadmap)
 - [ ] Drag & drop dosya yükleme
@@ -137,10 +156,29 @@ net.minecraft.client.Minecraft -> abc:
 ## Recommended GitHub Repository Structure
 ```text
 .
-├─ mc_wiewer.html
+├─ index.html        # GitHub Pages entry file
+├─ mc_wiewer.html    # Original source file (optional)
 ├─ README.md
 └─ LICENSE (optional)
 ```
+
+## Deploy on GitHub Pages (github.io)
+This project is now ready for direct publishing because `index.html` is created.
+
+1. Push these files to your GitHub repository:
+   - `index.html`
+   - `mc_wiewer.html`
+   - `README.md`
+2. Open your repository on GitHub → **Settings** → **Pages**.
+3. Under **Build and deployment**:
+   - **Source**: `Deploy from a branch`
+   - **Branch**: `main` (or your active branch)
+   - **Folder**: `/ (root)`
+4. Click **Save**.
+5. In 1-3 minutes, your site will be available at:
+   - `https://your-username.github.io/your-repo/`
+
+Note: No extra configuration is required unless you want a custom domain.
 
 ## Roadmap
 - [ ] Drag & drop upload
