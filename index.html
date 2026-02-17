@@ -330,6 +330,7 @@
         versionLoaded: "Versiyon yüklendi",
         versionLoadFailed: "Versiyon yüklenemedi",
         versionListMissing: "Versiyon listesi bulunamadı (version/versions.json veya versions/versions.json)",
+        localFileModeHint: "Local file modunda (file://) sürüm listesi okunamaz. Local server ile aç: python -m http.server 5500",
         file: "Özel Dosya",
         fileHelp: "Alternatif: Kendi .txt mapping dosyanı elle seçebilirsin.",
         search: "Arama",
@@ -377,6 +378,7 @@
         versionLoaded: "Version loaded",
         versionLoadFailed: "Failed to load version",
         versionListMissing: "Version list not found (version/versions.json or versions/versions.json)",
+        localFileModeHint: "Version list cannot be read in file:// mode. Run a local server: python -m http.server 5500",
         file: "Custom File",
         fileHelp: "Alternative: choose your own .txt mapping manually.",
         search: "Search",
@@ -577,7 +579,9 @@
       } catch (err) {
         versionSelect.disabled = true;
         loadVersionBtn.disabled = true;
-        stats.innerText = t("versionListMissing");
+        stats.innerText = location.protocol === "file:"
+          ? t("localFileModeHint")
+          : t("versionListMissing");
       }
     }
 
