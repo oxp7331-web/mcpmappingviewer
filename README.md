@@ -1,331 +1,161 @@
-- 
+# MC Mapping Viewer / Minecraft Mapping Görüntüleyici
 
-```md
-# Minecraft Mapping Explorer (MC Mapping Viewer) — Ultra Fast ⚡
+> **Made by 0b42** (aka **ebukeh**)
 
-Minecraft mapping (`.txt`) dosyalarını tarayıcı içinde **aşırı hızlı**, modern ve akıcı şekilde görüntülemek, aramak, filtrelemek ve CSV olarak dışa aktarmak için hazırlanmış **tek dosyalık (single-file) HTML tool**.
-
----
-
-## ✨ Features
-
-- ⚡ Dosyayı seç → anında hazır görünüm
-- 🔎 Akıllı arama sistemi (class / method / field + skor bazlı)
-- 🧩 Class collapse / expand sistemi
-- 📋 Tek tıkla kopyalama (deobf / obf)
-- 🌗 Light / Dark tema
-- 🌍 TR / EN dil desteği
-- 📤 Filtrelenmiş veriyi CSV export
-- 🧠 `# {"fileName":"..."}` metadata desteği
-- 🚀 Büyük mapping dosyalarında performans optimizasyonu
+Modern, hızlı ve kullanımı kolay bir Minecraft mapping görüntüleme aracı.  
+A modern, fast, and easy-to-use Minecraft mapping viewer.
 
 ---
 
-# 🇹🇷 Türkçe
+## 🇹🇷 Türkçe
 
-## 📦 Kurulum
+## Proje Hakkında
+`mc_wiewer.html`, ProGuard tarzı mapping dosyalarını (`.txt`) okuyup görsel bir tabloda incelemek için tasarlanmış tek dosyalık (single-file) bir web aracıdır.
 
-### 1) Çalıştırma
-Backend gerekmez.
+Öne çıkan amaçlar:
+- Mapping analizini hızlı hale getirmek
+- Sınıf / metod / alan aramalarını kolaylaştırmak
+- Tek dosyayla, kurulum gerektirmeden çalışmak
 
-1. Repo’yu indir / clone’la
-2. `index.html` dosyasını tarayıcıda aç
-3. Mapping `.txt` dosyanı seç
-4. Arama / filtre / export özelliklerini kullan
+## Özellikler
+- ⚡ **Tek tıkta yükleme**: Mapping dosyasını seçince otomatik parse edilir.
+- 🔎 **Akıllı arama**: Sınıf, metod, alan, parent ve dönüş tipine göre filtreleme.
+- 🧠 **Skor bazlı sonuç sıralama**: En alakalı eşleşmeler üstte görünür.
+- 🏷️ **Tür filtreleri**: Tümü / Sınıf / Metod / Alan.
+- 🧩 **Class expand/collapse**: Sınıf satırlarını aç-kapat.
+- 📋 **Kopyalama butonları**: Obf/deobf değerlerini hızlıca panoya al.
+- 🌗 **Tema desteği**: Açık/Koyu mod.
+- 🌍 **Dil desteği**: Türkçe / English.
+- 📤 **CSV export**: Görünen sonuçları dışa aktar.
+- 🚀 **Performans odaklı render**: Büyük dosyalarda satır limiti ve optimize listeleme.
 
----
+## Neden Bu Araç?
+Minecraft mapping dosyaları büyük ve karmaşık olabilir. Bu araç:
+- düz metni okunabilir hale getirir,
+- doğru class/method/field bulma süresini kısaltır,
+- hızlı reverse-analysis iş akışına yardımcı olur.
 
-### 2) GitHub Pages ile Yayınlama
+## Kullanım
+1. `mc_wiewer.html` dosyasını tarayıcıda aç.
+2. Mapping `.txt` dosyanı seç.
+3. Arama kutusuna sınıf/metod/alan yaz veya hazır chip’leri kullan.
+4. İhtiyacın olursa filtre düğmeleriyle sonuç tipini daralt.
+5. Satıra tıklayarak detay panelini aç.
+6. Gerekirse CSV olarak dışa aktar.
 
-1. GitHub Repo → **Settings**
-2. Sol Menü → **Pages**
-3. Source → `main` / `(root)`
-4. Save → birkaç dakika içinde link oluşur
-
----
-
-## 🎮 Kullanım
-
-### Dosya Seçimi
-Mapping `.txt` dosyasını seçince:
-
-- Arama temizlenir
-- Filtre "Tümü" olur
-- İlk class otomatik açılır
-- Tablo otomatik render edilir
-
----
-
-## 🔎 Akıllı Arama
-
-Desteklenen özellikler:
-
-- Class / Method / Field arama
-- Türkçe karakter normalize edilir (ı → i, ş → s, ç → c, vb.)
-- `/` ve `\` karakterleri `.` gibi davranır
-- `fileName` metadata içinden arama yapabilir
-- Type alias destekler (class / method / field)
-
-### Örnek Aramalar
-
-```
-
-net.minecraft.client.Minecraft
-minecraft
-render
-gui
-field tick
-method run
-SomeClass.java
-
-```
-
----
-
-## 🎛 Filtreler
-
-- **Tümü**
-- **Sınıf**
-- **Metod**
-- **Alan**
-
----
-
-## 📋 Copy Sistemi
-
-Her satırda 📋 butonu ile:
-
-- Obf veya Deobf isimleri kopyalanabilir.
-
----
-
-## 📤 CSV Export
-
-Export butonu mevcut filtre + arama sonucunu indirir.
-
-CSV formatı:
-
-```
-
-type,deobf,obf,detail,parent
-
-```
-
----
-
-# 🧾 Mapping Formatı
-
-Bu tool **ProGuard / R8 mapping formatı** destekler.
-
----
-
-## ✅ Minimal Mapping Örneği
-
-```
-
+## Desteklenen Mapping Yapısı (Örnek)
+```txt
 net.minecraft.client.Minecraft -> abc:
-void run() -> a
-int fps -> b
-
-net.minecraft.client.gui.Gui -> def:
-void render() -> c
-boolean debug -> d
-
-net.minecraft.client.renderer.RenderGlobal -> ghi:
-void renderEntities() -> a
-void renderSky() -> b
-int renderDistanceChunks -> c
-
+    int someField -> a
+    1:10:void runTick() -> b
 ```
+
+- `Class -> obf:` satırları sınıf olarak parse edilir.
+- İçerideki satırlar metod veya alan olarak işlenir.
+- Meta satırlar (ör. `# {"fileName": "..."}`) varsa kaynak dosya bilgisi yakalanır.
+
+## Teknik Notlar
+- Teknoloji: **HTML + Vanilla JS + Tailwind (CDN)**
+- Build step yok, framework kurulumu yok.
+- Tek dosyalık mimari sayesinde kolay paylaşım.
+
+## GitHub İçin Önerilen Depo Yapısı
+```text
+.
+├─ mc_wiewer.html
+├─ README.md
+└─ LICENSE (opsiyonel)
+```
+
+## Yol Haritası (Roadmap)
+- [ ] Drag & drop dosya yükleme
+- [ ] Regex modu
+- [ ] Sıralama (sort) kontrolleri
+- [ ] Çoklu dosya karşılaştırma
+- [ ] Daha gelişmiş export formatları (JSON/TSV)
+
+## Katkı
+Katkı yapmak istersen issue veya pull request açabilirsin. Kod sade tutulduğu için geliştirmesi kolaydır.
+
+## Geliştirici
+**0b42** / **ebukeh**
 
 ---
 
-## ✅ Ayrıntılı Mapping Örneği (Metadata Destekli)
+## 🇬🇧 English
 
-Viewer `# {"fileName":"..."}` satırlarını algılar:
+## About the Project
+`mc_wiewer.html` is a single-file web tool built to read ProGuard-style mapping files (`.txt`) and display them in a clean, interactive table.
 
-```
+Main goals:
+- Make mapping analysis faster
+- Simplify class/method/field search
+- Run instantly with zero installation
 
+## Features
+- ⚡ **One-click load**: Select a mapping file and it parses automatically.
+- 🔎 **Smart search**: Filter by class, method, field, parent, and detail/return type.
+- 🧠 **Score-based ranking**: Most relevant matches are prioritized.
+- 🏷️ **Type filters**: All / Class / Method / Field.
+- 🧩 **Class expand/collapse** for better navigation.
+- 📋 **Copy buttons** for obf/deobf values.
+- 🌗 **Theme support**: Light/Dark mode.
+- 🌍 **Language support**: Turkish / English.
+- 📤 **CSV export** of current filtered data.
+- 🚀 **Performance-oriented rendering** for large mapping files.
+
+## Why This Tool?
+Minecraft mapping files can be huge and hard to scan in raw text form. This viewer helps you:
+- turn plain text into structured data,
+- find the exact class/method/field quickly,
+- speed up reverse-analysis workflows.
+
+## Usage
+1. Open `mc_wiewer.html` in your browser.
+2. Select your mapping `.txt` file.
+3. Use search input or quick chips.
+4. Narrow results with filter buttons.
+5. Click a row to open details.
+6. Export filtered output to CSV when needed.
+
+## Supported Mapping Shape (Example)
+```txt
 net.minecraft.client.Minecraft -> abc:
-
-# {"fileName":"Minecraft.java"}
-
-```
-12:45:void run() -> a
-46:46:int fps -> b
-50:60:void startGame() -> c
-70:70:boolean running -> d
+    int someField -> a
+    1:10:void runTick() -> b
 ```
 
-net.minecraft.client.gui.Gui -> def:
+- `Class -> obf:` lines are parsed as class entries.
+- Indented lines are parsed as methods/fields.
+- Metadata lines (e.g. `# {"fileName": "..."}`) are used as source hints when available.
 
-# {"fileName":"Gui.java"}
+## Technical Notes
+- Stack: **HTML + Vanilla JS + Tailwind (CDN)**
+- No build step, no dependency installation.
+- Easy to distribute and host as a static file.
 
-```
-void render() -> a
-void drawRect(int,int,int,int,int) -> b
-boolean debug -> c
-```
-
-net.minecraft.client.renderer.RenderGlobal -> ghi:
-
-# {"fileName":"RenderGlobal.java"}
-
-```
-void renderEntities() -> a
-void renderSky() -> b
-int renderDistanceChunks -> c
-10:90:void loadRenderers() -> d
-91:110:void markBlocksForUpdate(int,int,int,int,int,int) -> e
+## Recommended GitHub Repository Structure
+```text
+.
+├─ mc_wiewer.html
+├─ README.md
+└─ LICENSE (optional)
 ```
 
-net.minecraft.client.entity.EntityPlayerSP -> jkl:
+## Roadmap
+- [ ] Drag & drop upload
+- [ ] Regex search mode
+- [ ] Sorting controls
+- [ ] Multi-file comparison
+- [ ] Advanced export formats (JSON/TSV)
 
-# {"fileName":"EntityPlayerSP.java"}
+## Contributing
+Feel free to open an issue or submit a pull request. The codebase is intentionally straightforward for easy iteration.
 
-```
-void onUpdate() -> a
-void sendChatMessage(java.lang.String) -> b
-float rotationYaw -> c
-float rotationPitch -> d
-```
-
-net.minecraft.client.multiplayer.WorldClient -> mno:
-
-# {"fileName":"WorldClient.java"}
-
-```
-void tick() -> a
-void updateEntities() -> b
-int difficultySetting -> c
-```
-
-````
-
-📌 Not:
-- Metadata satırı class satırından sonra gelmelidir.
-- Method/field otomatik parent class’a bağlanır.
+## Author
+**0b42** / **ebukeh**
 
 ---
 
-# ⚙ Performans
-
-Büyük mapping dosyalarında UI donmaması için:
-
-- `MAX_RENDER_ROWS` limiti vardır
-- Çok fazla class varsa sınırlama uygulanır
-- Çok fazla member varsa class başına limit vardır
-- Aramada en iyi eşleşen class’lar otomatik expand edilir
-
----
-
-# 🛠 Customization
-
-Kod içinden değiştirebilirsin:
-
-```js
-const MAX_RENDER_ROWS = 1800;
-const AUTO_EXPAND_SEARCH_CLASS_LIMIT = 30;
-const SEARCH_MEMBER_LIMIT_PER_CLASS = 220;
-````
-
----
-
-# 🌍 English
-
-## 📦 Installation
-
-No backend required.
-
-1. Download / clone repository
-2. Open `index.html` in browser
-3. Select a `.txt` mapping file
-4. Use search / filter / export
-
----
-
-## 🔎 Smart Search
-
-Supports:
-
-* Class / Method / Field search
-* Turkish character normalization
-* `/` and `\` act like `.`
-* `fileName` metadata search
-* Type alias tokens
-
-### Example Queries
-
-```
-net.minecraft.client.Minecraft
-minecraft
-render
-gui
-field tick
-method run
-SomeClass.java
-```
-
----
-
-## 🎛 Filters
-
-* All
-* Class
-* Method
-* Field
-
----
-
-## 📤 CSV Export
-
-Exports current filtered + searched dataset.
-
-Format:
-
-```
-type,deobf,obf,detail,parent
-```
-
----
-
-# 🧾 Supported Mapping Format
-
-ProGuard / R8 mapping format supported.
-
----
-
-## Minimal Example
-
-```
-net.minecraft.client.Minecraft -> abc:
-    void run() -> a
-    int fps -> b
-```
-
----
-
-## Detailed Example with Metadata
-
-```
-net.minecraft.client.Minecraft -> abc:
-# {"fileName":"Minecraft.java"}
-    12:45:void run() -> a
-```
-
----
-
-# 📜 License
-
-MIT License recommended.
-
----
-
-# ⭐ Credits
-
-Made with ❤️ using HTML + TailwindCSS.
-Ultra Fast Rendering optimized for large mapping files.
-
-```
-
-
+## License
+No license file is included by default. Add a `LICENSE` file (MIT/Apache-2.0/etc.) if you want explicit reuse permissions.
